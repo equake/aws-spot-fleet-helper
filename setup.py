@@ -10,6 +10,6 @@ setup(
     author='Marcos Araujo Sobrinho',
     author_email='marcos@mcmweb.com.br',
     url='https://gitlab.com/equake/aws-spot-fleet-helper/',
-    long_description=open('README.md').read(),
+    long_description=open('README').read(),
     install_requires=open('requirements.txt').read().strip('\n').split('\n')
 )
