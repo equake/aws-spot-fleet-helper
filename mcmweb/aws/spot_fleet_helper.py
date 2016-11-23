@@ -1,8 +1,11 @@
 #!/usr/bin/env python2.7
+from __future__ import print_function
+
 import json
-import re
 from base64 import b64encode
 from datetime import datetime, timedelta
+
+DEFAULT_FLEET_ROLE = 'aws-ec2-spot-fleet-role'
 
 INSTANCE_WEIGHT = {
     'nano': 1,
@@ -17,35 +20,39 @@ INSTANCE_WEIGHT = {
     '10xlarge': 40
 }
 FLEET_ROLE_ARN = 'arn:aws:iam::%(account_id)i:role/%(fleet_role)s'
-INSTANCE_PROFILE_ARN = 'arn:aws:iam::%(account_id)i:instance-profile/%(instance_profile)s'
+INSTANCE_PROFILE_ARN = 'arn:aws:iam::%(account_id)i:instance-profile/%(iam_role)s'
 
 
-class SpotFleet(object):
-
+class SpotFleetConfig(object):
     instance_types = []
     monitoring = True
     security_groups = []
     subnet_ids = []
     target_capacity = 1
+    user_data = None
 
-    def __init__(self, account_id, spot_price, key_name, image_id, instance_profile, associate_public_ip=None, fleet_role='aws-ec2-spot-fleet-role'):
+    def __init__(self, account_id, bid_value, ssh_key_name, ami_id, iam_role, assign_public_ip=None, fleet_role=DEFAULT_FLEET_ROLE):
         """
-        :param account_id:
-        :param fleet_role:
-        :param spot_price:
-        :param key_name:
-        :param image_id:
-        :param instance_profile:
+        SpotFleet
+        Generate the LaunchSpecification JSON config file for deploying spot fleets
+        :param account_id: AWS account id
+        :param bid_value: Maximum bid value per VCPU in USD
+        :param ssh_key_name: SSH key name to be used
+        :param ami_id: Amazon Machine Image id to deploy
+        :param iam_role: Instance IAM role
+        :param assign_public_ip: Assign public ip to launched instances
+        :param fleet_role: IAM role used to deploy assets
         """
         self.account_id = account_id
-        self.associate_public_ip = associate_public_ip
+        self.bid_value = bid_value
+        self.ssh_key_name = ssh_key_name
+        self.ami_id = ami_id
+        self.iam_role = iam_role
+        self.assign_public_ip = assign_public_ip
         self.fleet_role = fleet_role
-        self.image_id = image_id
-        self.instance_profile = instance_profile
-        self.key_name = key_name
-        self.spot_price = spot_price
 
     def __instance_weight(self, instance_type):
+        """ Infer instance weight/cpu count based on instance type name """
         size = instance_type.rsplit('.', 1)[1]
         weight = INSTANCE_WEIGHT.get(size)
         if not weight:
@@ -57,7 +64,7 @@ class SpotFleet(object):
         return {
             'AllocationStrategy': 'lowestPrice',
             'IamFleetRole': FLEET_ROLE_ARN % self.__dict__,
-            'SpotPrice': str(self.spot_price),
+            'SpotPrice': str(self.bid_value),
             'TargetCapacity': self.target_capacity,
             'TerminateInstancesWithExpiration': True,
             'Type': 'maintain',
@@ -83,9 +90,9 @@ class SpotFleet(object):
         for instance_type in self.instance_types:
             for subnet_id in self.subnet_ids:
                 spec = {
-                    'ImageId': self.image_id,
+                    'ImageId': self.ami_id,
                     'InstanceType': instance_type,
-                    'KeyName': self.key_name,
+                    'KeyName': self.ssh_key_name,
                     'WeightedCapacity': self.__instance_weight(instance_type),
                     'Monitoring': {'Enabled': bool(self.monitoring)},
                     'IamInstanceProfile': {'Arn': INSTANCE_PROFILE_ARN % self.__dict__},
@@ -95,49 +102,46 @@ class SpotFleet(object):
                         'SubnetId': subnet_id
                     }]
                 }
-                if self.associate_public_ip is not None:
-                    spec['NetworkInterfaces'][0]['AssociatePublicIpAddress'] = bool(self.associate_public_ip)
+                if self.assign_public_ip is not None:
+                    spec['NetworkInterfaces'][0]['AssociatePublicIpAddress'] = bool(self.assign_public_ip)
                 if self.user_data:
                     spec['UserData'] = self.user_data
                 yield spec
 
     def generate(self):
-        config = self._build_base_object()
-        config['LaunchSpecifications'] = list(self._build_launch_specs_object())
-        return config
+        """ Build configuration object """
+        fleet_config = self._build_base_object()
+        fleet_config['LaunchSpecifications'] = list(self._build_launch_specs_object())
+        return fleet_config
 
     def __str__(self):
+        """ Full json output! """
         return json.dumps(self.generate(), indent=2)
 
 
 if __name__ == '__main__':
     import argparse
-    import os
 
-    fleet = SpotFleet(444914307613, 0.025, 'solr', 'ami-f9e97795', 'satiro_permissions_role', True)
+    parser = argparse.ArgumentParser(description='Tool to launch a fleet of Spot instances within AWS infrastructure')
+    parser.add_argument('account_id', metavar='account-id', type=int, help='AWS account id')
+    parser.add_argument('-bid-value', type=float, required=True, help='Maximum bid value per VCPU in USD')
+    parser.add_argument('-ssh-key-name', type=str, required=True, help='SSH key name to be used')
+    parser.add_argument('-ami-id', type=str, required=True, help='Amazon Machine Image id to deploy')
+    parser.add_argument('-iam-role', type=str, required=True, help='Instance IAM role')
+    parser.add_argument('-instance-type', type=str, required=True, nargs='+', help='Instance types to deploy (ex: c3.4xlarge, m3.medium)')
+    parser.add_argument('-security-group', type=str, required=True, nargs='+', help='Security Group ids to deploy')
+    parser.add_argument('-subnet-id', type=str, required=True, nargs='+', help='Subnet ids to deploy')
+    parser.add_argument('--fleet-role', type=str, default=DEFAULT_FLEET_ROLE, help='IAM role used to deploy assets (default: %s)' % DEFAULT_FLEET_ROLE)
+    parser.add_argument('--assign-public-ip', type=bool, help='Assign public ip to launched instances')
 
-    fleet.monitoring = False
+    args = parser.parse_args()
 
-    fleet.instance_types.append('c3.large')
-    fleet.instance_types.append('m3.medium')
-    fleet.instance_types.append('c4.large')
-    fleet.instance_types.append('m4.large')
-    fleet.instance_types.append('m3.large')
-    fleet.instance_types.append('m4.xlarge')
-    fleet.instance_types.append('c4.xlarge')
-    fleet.instance_types.append('m3.xlarge')
-    fleet.instance_types.append('c3.xlarge')
+    config = SpotFleetConfig(args.account_id, args.bid_value, args.ssh_key_name, args.ami_id, args.iam_role, args.assign_public_ip, args.fleet_role)
+    for instance_type in args.instance_type:
+        config.instance_types.append(instance_type)
+    for security_group in args.security_group:
+        config.security_groups.append(security_group)
+    for subnet_id in args.subnet_id:
+        config.subnet_ids.append(subnet_id)
 
-    fleet.security_groups.append('sg-1a731e7e')
-
-    fleet.subnet_ids.append('subnet-2372a946')
-    fleet.subnet_ids.append('subnet-137d8e64')
-    fleet.subnet_ids.append('subnet-7fce9339')
-
-    with open('aws_spot_fleet_user_data.py.tmpl', 'r') as user_data_tmpl:
-        user_data = user_data_tmpl.read() % {'env': 'prod', 'version': '1.5.3', 'es_hostname': 'searchelk.vivareal.com'}
-
-    fleet.user_data = b64encode(user_data)
-
-    print json.dumps(fleet.generate(), indent=4, sort_keys=True)
-
+    print(str(config))
