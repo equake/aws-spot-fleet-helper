@@ -6,4 +6,4 @@ test:
   override:
     - pip install nose==1.3.7 coverage==4.2
     - pip install -r requirements.txt
-    - nosetests --with-coverage --cover-package=equake --cover-xml
+    - nosetests --with-coverage --cover-package=mcmweb --cover-xml
