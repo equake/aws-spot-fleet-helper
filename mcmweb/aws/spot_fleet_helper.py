@@ -77,8 +77,8 @@ class SpotFleetConfig(object):
         if not self.security_groups:
             raise Exception('Please provide at least one security_group')
         sgs = []
-        for security_group in self.security_groups:
-            sgs.append(security_group)
+        for sg in self.security_groups:
+            sgs.append(sg)
         return sgs
 
     def _build_launch_specs_object(self):
@@ -87,19 +87,19 @@ class SpotFleetConfig(object):
         if not self.subnet_ids:
             raise Exception('Please provide at least one subnet_id')
         sg_config = self._build_security_groups_object()
-        for instance_type in self.instance_types:
-            for subnet_id in self.subnet_ids:
+        for it in self.instance_types:
+            for sid in self.subnet_ids:
                 spec = {
                     'ImageId': self.ami_id,
-                    'InstanceType': instance_type,
+                    'InstanceType': it,
                     'KeyName': self.ssh_key_name,
-                    'WeightedCapacity': self.__instance_weight(instance_type),
+                    'WeightedCapacity': self.__instance_weight(it),
                     'Monitoring': {'Enabled': bool(self.monitoring)},
                     'IamInstanceProfile': {'Arn': INSTANCE_PROFILE_ARN % self.__dict__},
                     'NetworkInterfaces': [{
                         'DeviceIndex': 0,
                         'Groups': sg_config,
-                        'SubnetId': subnet_id
+                        'SubnetId': sid
                     }]
                 }
                 if self.assign_public_ip is not None:
