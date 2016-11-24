@@ -51,12 +51,13 @@ class SpotFleetConfig(object):
         self.assign_public_ip = assign_public_ip
         self.fleet_role = fleet_role
 
-    def __instance_weight(self, instance_type):
+    @staticmethod
+    def __instance_weight(instance_type_name):
         """ Infer instance weight/cpu count based on instance type name """
-        size = instance_type.rsplit('.', 1)[1]
+        size = instance_type_name.rsplit('.', 1)[1]
         weight = INSTANCE_WEIGHT.get(size)
         if not weight:
-            raise Exception('Invalid instance type: %s' % instance_type)
+            raise Exception('Invalid instance type: %s' % instance_type_name)
         return weight
 
     def _build_base_object(self):
@@ -109,13 +110,17 @@ class SpotFleetConfig(object):
                 yield spec
 
     def generate(self):
-        """ Build configuration object """
+        """ Build an configuration object
+        :rtype: dict
+        """
         fleet_config = self._build_base_object()
         fleet_config['LaunchSpecifications'] = list(self._build_launch_specs_object())
         return fleet_config
 
     def __str__(self):
-        """ Full json output! """
+        """ Full json output!
+        :rtype: str
+        """
         return json.dumps(self.generate(), indent=2)
 
 
