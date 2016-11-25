@@ -23,8 +23,8 @@ INSTANCE_WEIGHT = {
     '10xlarge': 40
 }
 
-FLEET_ROLE_ARN = 'arn:aws_spot_fleet_helper:iam::%(_account_id)i:role/%(_fleet_role)s'
-INSTANCE_PROFILE_ARN = 'arn:aws_spot_fleet_helper:iam::%(_account_id)i:instance-profile/%(_iam_role)s'
+FLEET_ROLE_ARN = 'arn:aws:iam::%(_account_id)i:role/%(_fleet_role)s'
+INSTANCE_PROFILE_ARN = 'arn:aws:iam::%(_account_id)i:instance-profile/%(_iam_role)s'
 
 PATTERN_AMI_ID = re.compile('^ami-[0-9a-f]{8,}$')
 PATTERN_INSTANCE_TYPE = re.compile('^[a-z]+[0-9]+\.([0-9]+)?(nano|micro|small|medium|large|xlarge)$')
