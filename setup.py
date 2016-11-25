@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='aws-spot-fleet-helper',
-    version='0.0.3',
+    version='0.0.4',
     description='Python library to help launching a fleet of Spot instances within AWS infrastructure',
     packages=find_packages(),
     license='MIT',

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 import re
 
-DEFAULT_FLEET_ROLE = 'aws_spot_fleet_helper-ec2-spot-fleet-role'
+DEFAULT_FLEET_ROLE = 'aws-ec2-spot-fleet-role'
 
 INSTANCE_WEIGHT = {
     'nano': 1,
