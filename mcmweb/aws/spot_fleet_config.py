@@ -66,7 +66,7 @@ class SpotFleetConfig(object):
         size = instance_type_name.rsplit('.', 1)[1]
         weight = INSTANCE_WEIGHT.get(size)
         if not weight:
-            raise Exception('Invalid instance type: %s' % instance_type_name)
+            raise ValidationException('Invalid instance type: %s' % instance_type_name)
         return weight
 
     def _build_base_object(self):
@@ -85,7 +85,7 @@ class SpotFleetConfig(object):
 
     def _build_security_groups_object(self):
         if not self._security_groups:
-            raise Exception('Please provide at least one security_group')
+            raise ValidationException('Please provide at least one security_group')
         sgs = []
         for sg in self._security_groups:
             sgs.append(sg)
@@ -93,9 +93,9 @@ class SpotFleetConfig(object):
 
     def _build_launch_specs_object(self):
         if not self._instance_types:
-            raise Exception('Please provide at least one instance_type')
+            raise ValidationException('Please provide at least one instance_type')
         if not self._subnet_ids:
-            raise Exception('Please provide at least one subnet_id')
+            raise ValidationException('Please provide at least one subnet_id')
         sg_config = self._build_security_groups_object()
         for it in self._instance_types:
             for sid in self._subnet_ids:
@@ -120,17 +120,17 @@ class SpotFleetConfig(object):
 
     def add_instance_type(self, instance_type):
         if not PATTERN_INSTANCE_TYPE.match(instance_type):
-            raise Exception('Invalid instance type "%s"' % instance_type)
+            raise ValidationException('Invalid instance type "%s"' % instance_type)
         self._instance_types.append(instance_type)
 
     def add_security_group_id(self, security_group):
         if not PATTERN_SECURITY_GROUP_ID.match(security_group):
-            raise Exception('Invalid security group "%s"' % security_group)
+            raise ValidationException('Invalid security group "%s"' % security_group)
         self._security_groups.append(security_group)
 
     def add_subnet_id(self, subnet_id):
         if not PATTERN_SUBNET_ID.match(subnet_id):
-            raise Exception('Invalid subnet "%s"' % subnet_id)
+            raise ValidationException('Invalid subnet "%s"' % subnet_id)
         self._subnet_ids.append(subnet_id)
 
     def should_assign_public_ip(self, public_ip):
@@ -156,6 +156,10 @@ class SpotFleetConfig(object):
         :rtype: str
         """
         return json.dumps(self.generate(), indent=2)
+
+
+class ValidationException(Exception):
+    pass
 
 
 if __name__ == '__main__':
@@ -196,6 +200,10 @@ if __name__ == '__main__':
                     user_data += user_data_file.readline()
             config.set_user_data(user_data)
 
-        print(str(config))
+        print(config)
+        sys.exit(0)
     except Exception as e:
-        print(e)
+        print('%s: %s' % (e.__class__.__name__, e.message), file=sys.stderr)
+        print('Please verify if all of your parameters are right!', file=sys.stderr)
+        sys.exit(100)
+
