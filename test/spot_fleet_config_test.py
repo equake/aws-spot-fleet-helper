@@ -4,7 +4,7 @@ import json
 import unittest
 from base64 import b64decode
 
-from mcmweb.aws.spot_fleet_config import SpotFleetConfig
+from mcmweb.aws_spot_fleet_helper.spot_fleet_config import SpotFleetConfig
 
 
 class SpotFleetConfigTest(unittest.TestCase):
