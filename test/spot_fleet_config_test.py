@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import json
 import unittest
+from base64 import b64decode
 
 from mcmweb.aws.spot_fleet_config import SpotFleetConfig
 
@@ -49,3 +52,8 @@ class SpotFleetConfigTest(unittest.TestCase):
         serialized = str(self.config)
         rebuilt = json.loads(serialized)
         self.assertDictEqual(untouched, rebuilt)
+
+    def validate_user_data_test(self):
+        user_data = 'eu !@$ tinha uma galinha\n que se chamava mariluúù!'
+        self.config.set_user_data(user_data)
+        self.assertEqual(user_data, b64decode(self.config._user_data))

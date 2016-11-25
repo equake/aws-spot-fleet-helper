@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 
 import json
@@ -135,6 +136,11 @@ class SpotFleetConfig(object):
     def should_assign_public_ip(self, public_ip):
         self._assign_public_ip = bool(public_ip)
 
+    def set_user_data(self, user_data):
+        if not user_data:
+            return
+        self._user_data = b64encode(user_data)
+
     def generate(self):
         """
         Build an configuration object
@@ -154,6 +160,7 @@ class SpotFleetConfig(object):
 
 if __name__ == '__main__':
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser(description='Tool to launch a fleet of Spot instances within AWS infrastructure')
     parser.add_argument('account_id', metavar='account-id', type=int, help='AWS account id')
@@ -164,17 +171,31 @@ if __name__ == '__main__':
     parser.add_argument('-instance-type', type=str, required=True, nargs='+', help='Instance types to deploy (ex: c3.4xlarge, m3.medium)')
     parser.add_argument('-security-group', type=str, required=True, nargs='+', help='Security Group ids to deploy')
     parser.add_argument('-subnet-id', type=str, required=True, nargs='+', help='Subnet ids to deploy')
-    parser.add_argument('--fleet-role', type=str, default=DEFAULT_FLEET_ROLE, help='IAM role used to deploy assets (default: %s)' % DEFAULT_FLEET_ROLE)
     parser.add_argument('--assign-public-ip', type=bool, help='Assign public ip to launched instances')
+    parser.add_argument('--fleet-role', type=str, default=DEFAULT_FLEET_ROLE, help='IAM role used to deploy assets (default: %s)' % DEFAULT_FLEET_ROLE)
+    parser.add_argument('--user-data', type=str, help='User data to be included in instance launch configuration. File name or "-" for reading from stdin')
 
     args = parser.parse_args()
 
     config = SpotFleetConfig(args.account_id, args.bid_value, args.ssh_key_name, args.ami_id, args.iam_role, args.assign_public_ip, args.fleet_role)
-    for arg_instance_type in args.instance_type:
-        config.add_instance_type(arg_instance_type)
-    for arg_security_group in args.security_group:
-        config.add_security_group_id(arg_security_group)
-    for arg_subnet_id in args.subnet_id:
-        config.add_subnet_id(arg_subnet_id)
+    try:
+        for arg_instance_type in args.instance_type:
+            config.add_instance_type(arg_instance_type)
+        for arg_security_group in args.security_group:
+            config.add_security_group_id(arg_security_group)
+        for arg_subnet_id in args.subnet_id:
+            config.add_subnet_id(arg_subnet_id)
 
-    print(str(config))
+        if args.user_data:
+            user_data = ''
+            if args.user_data == '-':
+                for line in sys.stdin:
+                    user_data += '%s\n' % line
+            else:
+                with open(args.user_data, 'r') as user_data_file:
+                    user_data += user_data_file.readline()
+            config.set_user_data(user_data)
+
+        print(str(config))
+    except Exception as e:
+        print(e)
