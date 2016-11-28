@@ -194,7 +194,7 @@ if __name__ == '__main__':
             user_data = ''
             if args.user_data == '-':
                 for line in sys.stdin:
-                    user_data += '%s\n' % line
+                    user_data += line
             else:
                 with open(args.user_data, 'r') as user_data_file:
                     user_data += user_data_file.readline()
