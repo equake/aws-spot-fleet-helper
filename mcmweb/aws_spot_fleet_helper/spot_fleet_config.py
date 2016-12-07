@@ -4,13 +4,14 @@ from __future__ import print_function
 
 import json
 import os
+import re
 from base64 import b64encode
 from datetime import datetime, timedelta
-
-import re
 from string import Template
 
-BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+from mcmweb import aws_spot_fleet_helper
+
+BASE_PATH = os.path.dirname(os.path.realpath(aws_spot_fleet_helper.__file__))
 
 DEFAULT_FLEET_ROLE = 'aws-ec2-spot-fleet-role'
 
@@ -235,7 +236,7 @@ if __name__ == '__main__':
         print(config)
         sys.exit(0)
     except Exception as e:
-        print('%s: %s' % (e.__class__.__name__, e.message), file=sys.stderr)
+        print('%s: %s' % (e.__class__.__name__, str(e)), file=sys.stderr)
         print('Please verify if all of your parameters are right!', file=sys.stderr)
         sys.exit(100)
 
