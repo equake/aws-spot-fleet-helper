@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-SCRIPT = """\
-${original_script}\
-"""
+SCRIPT = """${original_script}"""
 
-EC2_TAGS = """\
-${tags}\
-"""
+EC2_TAGS = """${tags}"""
 
 
 def tag_instance(json_tags):

@@ -119,7 +119,12 @@ class SpotFleetConfig(object):
             with open(os.path.join(BASE_PATH, 'spot_fleet_tagger.py'), 'r') as f_tmpl:
                 raw_template = f_tmpl.read()
             template = Template(raw_template)
-            encoded_user_data = b64encode(template.substitute({'original_script': self._user_data, 'tags': self._tags}))
+            template_data = {'tags': '', 'original_script': ''}
+            if self._tags:
+                template_data['tags'] = json.dumps(self._tags)
+            if self._user_data:
+                template_data['original_script'] = self._user_data
+            encoded_user_data = b64encode(template.substitute(template_data))
 
         for it in self._instance_types:
             for sid in self._subnet_ids:
