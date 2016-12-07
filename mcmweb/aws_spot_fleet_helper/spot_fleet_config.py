@@ -3,10 +3,14 @@
 from __future__ import print_function
 
 import json
+import os
 from base64 import b64encode
 from datetime import datetime, timedelta
 
 import re
+from string import Template
+
+BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 DEFAULT_FLEET_ROLE = 'aws-ec2-spot-fleet-role'
 
@@ -40,7 +44,7 @@ class SpotFleetConfig(object):
     _target_capacity = 1
     _user_data = None
 
-    def __init__(self, account_id, bid_value, ssh_key_name, ami_id, iam_role, assign_public_ip=None, fleet_role=DEFAULT_FLEET_ROLE):
+    def __init__(self, account_id, bid_value, ssh_key_name, ami_id, iam_role, tags=None, assign_public_ip=None, fleet_role=DEFAULT_FLEET_ROLE):
         """
         SpotFleet
         Generate the LaunchSpecification JSON config file for deploying spot fleets
@@ -59,6 +63,18 @@ class SpotFleetConfig(object):
         self._iam_role = iam_role
         self._assign_public_ip = assign_public_ip
         self._fleet_role = fleet_role
+        self._tags = self.__parse_tags(tags)
+
+    @staticmethod
+    def __parse_tags(tags):
+        if not tags:
+            return {}
+        if isinstance(tags, list):
+            return {key.strip(): value.strip() for key, value in [tag.strip().split('=') for tag in args.tags]}
+        elif isinstance(tags, dict):
+            return tags
+        else:
+            raise ValidationException('Unknown tag format: %s' % tags)
 
     @staticmethod
     def __instance_weight(instance_type_name):
@@ -97,6 +113,14 @@ class SpotFleetConfig(object):
         if not self._subnet_ids:
             raise ValidationException('Please provide at least one subnet_id')
         sg_config = self._build_security_groups_object()
+
+        encoded_user_data = None
+        if self._tags or self._user_data:
+            with open(os.path.join(BASE_PATH, 'spot_fleet_tagger.py'), 'r') as f_tmpl:
+                raw_template = f_tmpl.read()
+            template = Template(raw_template)
+            encoded_user_data = b64encode(template.substitute({'original_script': self._user_data, 'tags': self._tags}))
+
         for it in self._instance_types:
             for sid in self._subnet_ids:
                 spec = {
@@ -112,10 +136,12 @@ class SpotFleetConfig(object):
                         'SubnetId': sid
                     }]
                 }
+
                 if self._assign_public_ip is not None:
                     spec['NetworkInterfaces'][0]['AssociatePublicIpAddress'] = bool(self._assign_public_ip)
-                if self._user_data:
-                    spec['UserData'] = self._user_data
+                if encoded_user_data:
+                    spec['UserData'] = encoded_user_data
+
                 yield spec
 
     def add_instance_type(self, instance_type):
@@ -139,7 +165,7 @@ class SpotFleetConfig(object):
     def set_user_data(self, user_data):
         if not user_data:
             return
-        self._user_data = b64encode(user_data)
+        self._user_data = user_data
 
     def generate(self):
         """
@@ -177,11 +203,12 @@ if __name__ == '__main__':
     parser.add_argument('-subnet-id', type=str, required=True, nargs='+', help='Subnet ids to deploy')
     parser.add_argument('--assign-public-ip', type=bool, help='Assign public ip to launched instances')
     parser.add_argument('--fleet-role', type=str, default=DEFAULT_FLEET_ROLE, help='IAM role used to deploy assets (default: %s)' % DEFAULT_FLEET_ROLE)
+    parser.add_argument('--tags', type=str, nargs='+', help='AMI tags. Format: "key=value"')
     parser.add_argument('--user-data', type=str, help='User data to be included in instance launch configuration. File name or "-" for reading from stdin')
 
     args = parser.parse_args()
 
-    config = SpotFleetConfig(args.account_id, args.bid_value, args.ssh_key_name, args.ami_id, args.iam_role, args.assign_public_ip, args.fleet_role)
+    config = SpotFleetConfig(args.account_id, args.bid_value, args.ssh_key_name, args.ami_id, args.iam_role, args.tags, args.assign_public_ip, args.fleet_role)
     try:
         for arg_instance_type in args.instance_type:
             config.add_instance_type(arg_instance_type)
