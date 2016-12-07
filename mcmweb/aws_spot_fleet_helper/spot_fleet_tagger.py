@@ -24,9 +24,6 @@ def tag_instance(json_tags):
                 Tags=[{'Key': key, 'Value': tags[key]} for key in tags]
             )
 
-            print(identity)
-            print(tags)
-
             return True
         except urllib2.HTTPError as e:
             print('# ERROR: Unable to retrieve Instance ID! Http Error: %i. Tagging is disabled. :(' % e.code)
