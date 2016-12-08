@@ -12,7 +12,8 @@ usage: spot_fleet_config.py [-h] -bid-value BID_VALUE -ssh-key-name
                             [SECURITY_GROUP ...] -subnet-id SUBNET_ID
                             [SUBNET_ID ...]
                             [--assign-public-ip ASSIGN_PUBLIC_IP]
-                            [--fleet-role FLEET_ROLE] [--user-data USER_DATA]
+                            [--fleet-role FLEET_ROLE] [--tags TAGS [TAGS ...]]
+                            [--user-data USER_DATA]
                             account-id
 
 Tool to launch a fleet of Spot instances within AWS infrastructure
@@ -36,8 +37,10 @@ optional arguments:
   --assign-public-ip ASSIGN_PUBLIC_IP
                         Assign public ip to launched instances
   --fleet-role FLEET_ROLE
-                        IAM role used to deploy assets (default:
-                        aws_spot_fleet_helper-ec2-spot-fleet-role)
+                        IAM role used to deploy assets (default: aws-ec2-spot-
+                        fleet-role)
+  --tags TAGS [TAGS ...]
+                        AMI tags. Format: "key=value"
   --user-data USER_DATA
                         User data to be included in instance launch
                         configuration. File name or "-" for reading from stdin
