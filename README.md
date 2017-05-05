@@ -21,6 +21,8 @@ This library is meant to be imported within your own application, but functional
 
 ```sh
 $ spot_fleet_config.py --help
+```
+```text
 usage: spot_fleet_config.py [-h] -bid-value BID_VALUE -ssh-key-name
                             SSH_KEY_NAME -ami-id AMI_ID -iam-role IAM_ROLE
                             -instance-type INSTANCE_TYPE [INSTANCE_TYPE ...]
