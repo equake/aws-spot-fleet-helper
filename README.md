@@ -1,11 +1,28 @@
-# AWS Spot Fleet Helper #
+# AWS Spot Fleet Helper
+Python library to help launching a fleet of Spot instances within AWS infrastructure
 
-### Python library to help launching a fleet of Spot instances within AWS infrastructure ###
+## Architecture
+![Lib Architecture](/architecture/aws-spot-helpers.png?raw=true "Architecture diagram")
 
-Functionality is also available via CLI:
+_*for illustrative purposes only_
 
+## Application Checklist
+  - [ ] Sonar
+  - [ ] Jenkins
+  - [X] [Pypi](https://pypi.python.org/pypi/aws-spot-fleet-helper)
+  
+## How to Build
+```sh 
+$ make build
 ```
+
+## How to Run
+This library is meant to be imported within your own application, but functionality is also available via CLI:
+
+```sh
 $ spot_fleet_config.py --help
+```
+```text
 usage: spot_fleet_config.py [-h] -bid-value BID_VALUE -ssh-key-name
                             SSH_KEY_NAME -ami-id AMI_ID -iam-role IAM_ROLE
                             -instance-type INSTANCE_TYPE [INSTANCE_TYPE ...]
@@ -46,3 +63,23 @@ optional arguments:
                         User data to be included in instance launch
                         configuration. File name or "-" for reading from stdin
 ```
+
+## How to Test
+```sh
+$ make test
+```
+
+## How to Publish
+This lib is available for download via `pip`. If you need to upload an new version to `pypi`, just type:
+```sh 
+make publish
+```
+
+## How to Deploy
+If you want to use the `CLI`:
+```sh
+pip install aws-spot-fleet-helper
+```
+The `CLI` should now be available in your path.
+
+When using this lib with your own app, just put it as an dependency in your `requirements.txt` file.

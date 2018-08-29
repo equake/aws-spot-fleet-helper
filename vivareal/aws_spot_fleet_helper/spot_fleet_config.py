@@ -9,7 +9,7 @@ from base64 import b64encode
 from datetime import datetime, timedelta
 from string import Template
 
-from mcmweb import aws_spot_fleet_helper
+from vivareal import aws_spot_fleet_helper
 
 BASE_PATH = os.path.dirname(os.path.realpath(aws_spot_fleet_helper.__file__))
 
